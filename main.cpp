@@ -1,4 +1,5 @@
 #include "scene.h"
+#include "shapes.h"
 #include <cmath>
 
 int main() {
@@ -9,9 +10,13 @@ int main() {
     Vector Q(0, 0, 55);
     Scene scene(Q, H, W, alpha);
 
-    scene.add_shape(
-        new Sphere(Vector(-10, 0, 0), 10.0, Vector(1, 1, 1), false, true));
-    scene.add_shape(new Sphere(Vector(10, 0, 0), 10.0, Vector(1, 1, 1), true));
+    // scene.add_shape(new Sphere(Vector(-20, 0, 0), 10.0, Vector(1, 1, 1),
+    // true));
+    scene.add_shape(new Sphere(Vector(0, 0, 0), 10.0, Vector(1, 1, 1), false,
+                               false, false));
+    /* scene.add_shape(new Sphere(Vector(20, 0, 0), 10.0, Vector(1, 1, 1),
+    false, true, false)); scene.add_shape( new Sphere(Vector(20, 0, 0), 9.0,
+    Vector(1, 1, 1), false, true, true)); */
     scene.add_shape(
         new Sphere(Vector(0.0, -1000, 0.0), 990.0, Vector(0, 0, 1)));
     scene.add_shape(new Sphere(Vector(0.0, 1000, 0.0), 940.0, Vector(1, 0, 0)));
