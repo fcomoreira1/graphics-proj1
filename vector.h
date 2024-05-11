@@ -10,6 +10,7 @@ class Vector {
     double operator[](int i) const;
     double &operator[](int i);
     void print();
+    int max_arg();
     double data[3];
 };
 

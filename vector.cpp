@@ -28,6 +28,12 @@ double &Vector::operator[](int i) { return data[i]; };
 void Vector::print() {
     std::cout << data[0] << " " << data[1] << " " << data[2] << std::endl;
 }
+int Vector::max_arg() {
+    if (data[0] >= data[1]) {
+        return data[0] >= data[2] ? 0 : 2;
+    }
+    return data[1] >= data[2] ? 1 : 2;
+}
 
 Vector operator+(const Vector &a, const Vector &b) {
     return Vector(a[0] + b[0], a[1] + b[1], a[2] + b[2]);

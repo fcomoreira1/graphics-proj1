@@ -1,16 +1,7 @@
+#include "sphere.h"
+#include "shapes.h"
 #include <cmath>
 #include <math.h>
-#define _CRT_SECURE_NO_WARNINGS 1
-#include <iostream>
-#include <vector>
-
-#define STB_IMAGE_WRITE_IMPLEMENTATION
-#include "./stb/stb_image_write.h"
-
-#define STB_IMAGE_IMPLEMENTATION
-#include "./stb/stb_image.h"
-
-#include "shapes.h"
 double refraction_index = 1.0 / 1.52;
 
 Sphere::Sphere(Vector _C, double _R, Vector _albedo, bool _mirror,
@@ -22,7 +13,7 @@ Sphere::Sphere(Vector _C, double _R, Vector _albedo, bool _mirror,
     is_transparent_b = _transparent;
     is_interior_b = _is_interior;
 }
-bool Sphere::intersect(const Ray &r, double &t) {
+bool Sphere::intersect(const Ray &r, double &t, Vector &N) {
     Vector dif = C - r.get_origin();
     double dot_prod = dot(r.get_dir(), dif);
     double delta = dot_prod * dot_prod - dif.norm2() + R * R;
@@ -37,9 +28,11 @@ bool Sphere::intersect(const Ray &r, double &t) {
         } else {
             t = dot_prod + sqrt_delta;
         }
+        Vector P = r.get_origin() + t * r.get_dir();
+        N = (P - C) / R;
     }
     return intersected;
 }
-Vector Sphere::get_normal(const Vector &P) {
+/* Vector Sphere::get_normal(const Vector &P) {
     return (is_interior_b ? -1 : 1) * (P - C) / R;
-}
+} */

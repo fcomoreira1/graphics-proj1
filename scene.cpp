@@ -1,21 +1,21 @@
 #include "scene.h"
-#include "stb/stb_image_write.h"
-#include <cmath>
+#define _CRT_SECURE_NO_WARNINGS 1
+
+#define STB_IMAGE_WRITE_IMPLEMENTATION
+#include "./stb/stb_image_write.h"
+
+#define STB_IMAGE_IMPLEMENTATION
+#include "./stb/stb_image.h"
+#include <float.h>
 #include <iostream>
 
 const double refractive_index = 1.0 / 1.52;
 
-Scene::Scene(Vector _center, int _H, int _W, double _alpha,
-             Vector _light_source) {
-    center = _center;
-    H = _H;
-    W = _W;
-    alpha = _alpha;
-    light_source = _light_source;
-}
+Scene::Scene(Vector _center) : center(_center) {}
 void Scene::add_shape(Shape *S) { shapes.emplace_back(S); }
 void Scene::render() {
     std::vector<unsigned char> image(W * H * 3, 0);
+#pragma omp parallel for
     for (size_t i = 0; i < H; i++) {
         for (size_t j = 0; j < W; j++) {
             double z = -(double)W / (2.0 * std::tan(alpha / 2.0));
@@ -35,16 +35,33 @@ void Scene::render() {
 Vector Scene::raytrace(const Ray &r) {
     Vector color;
     double sigma = 0.001;
-    for (size_t i = 0; i < number_of_rays; i++) {
-        // Antialising
-        double r1 = (double)rand() / RAND_MAX;
-        double r2 = (double)rand() / RAND_MAX;
-        double x = sigma * sqrt(-2.0 * log(r1)) * cos(2 * M_PI * r2);
-        double y = sigma * sqrt(-2.0 * log(r1)) * sin(2 * M_PI * r2);
-        Vector dir = r.get_dir() + Vector(x, y, 0);
-        color = color + pathtrace(Ray(r.get_origin(), dir), max_ray_bounces);
+    // #pragma omp parallel for
+    for (size_t i = 0; i < rays_per_pixel; i++) {
+        Ray r0 = r;
+        if (ANTIALIASING) {
+            // Antialising
+            double r1 = (double)rand() / RAND_MAX;
+            double r2 = (double)rand() / RAND_MAX;
+            double x = sigma * sqrt(-2.0 * log(r1)) * cos(2 * M_PI * r2);
+            double y = sigma * sqrt(-2.0 * log(r1)) * sin(2 * M_PI * r2);
+            r0 = Ray(r.get_origin(), r.get_dir() + Vector(x, y, 0));
+        }
+        if (DoF) {
+            // Depth of Field
+            double l = D / (r.get_dir().data[2] * r.get_dir().data[2] +
+                            r.get_dir().data[1] * r.get_dir().data[1]);
+            Vector P = r.get_origin() + l * r.get_dir();
+            double r2 = (double)rand() / RAND_MAX;
+            double r1 = (double)rand() / RAND_MAX;
+            double x = cos(2 * M_PI * r1) * sqrt(1 - r2);
+            double y = sin(2 * M_PI * r1) * sqrt(1 - r2);
+            double z = sqrt(r2);
+            Vector O = r.get_origin() + 1 * Vector(x, y, z);
+            r0 = Ray(O, P - O);
+        }
+        color = color + pathtrace(r0, max_ray_bounces);
     }
-    return color / number_of_rays;
+    return color / rays_per_pixel;
 }
 
 Vector Scene::random_direction(const Vector &N) {
@@ -70,21 +87,22 @@ Vector Scene::pathtrace(const Ray &r, int ray_depth = 0) {
     if (ray_depth < 0) {
         return Vector(0.0, 0.0, 0.0);
     }
-    double min_t = MAXFLOAT;
+    double min_t = DBL_MAX;
     double t;
+    Vector N0, N;
     Shape *S;
     for (auto &s : shapes) {
-        if (s->intersect(r, t) && t < min_t) {
+        if (s->intersect(r, t, N0) && t < min_t) {
             S = s;
             min_t = t;
+            N = N0;
         }
     }
-    if (min_t == MAXFLOAT) {
+    if (min_t == DBL_MAX) {
         return Vector(0.0, 0.0, 0.0);
     }
     // Compute the intersection point P and the normal N
     Vector P = r.get_origin() + (min_t * r.get_dir());
-    Vector N = S->get_normal(P);
     double dot_prod = dot(r.get_dir(), N);
     Vector V = light_source - P;
 
@@ -106,6 +124,7 @@ Vector Scene::pathtrace(const Ray &r, int ray_depth = 0) {
             Vector t = r_index * (r.get_dir() - dot_prod * N) - sqrt(sq) * N;
             return pathtrace(Ray(P, t), ray_depth - 1);
         } else {
+            // Total Refraction
             P = P + 1e-8 * N;
             Vector t = r.get_dir() - 2 * dot_prod * N;
             return pathtrace(Ray(P, t), ray_depth - 1);
@@ -119,7 +138,7 @@ Vector Scene::pathtrace(const Ray &r, int ray_depth = 0) {
     bool non_direct_path = false;
     Vector direct_light;
     for (auto s : shapes) {
-        if (s->intersect(Ray(P, light_source - P), t0)) {
+        if (s->intersect(Ray(P, light_source - P), t0, N0)) {
             if (t0 < (light_source - P).norm()) {
                 non_direct_path = true;
                 break;
@@ -133,8 +152,11 @@ Vector Scene::pathtrace(const Ray &r, int ray_depth = 0) {
     }
 
     // Get indirect light
-    Vector omega_i = random_direction(N);
-    Vector indirect_light =
-        S->get_color() * pathtrace(Ray(P, omega_i), ray_depth - 1);
+    Vector indirect_light;
+    if (INDIRECT_LIGHTING) {
+        Vector omega_i = random_direction(N);
+        indirect_light =
+            S->get_color() * pathtrace(Ray(P, omega_i), ray_depth - 1);
+    }
     return direct_light + indirect_light;
 }
