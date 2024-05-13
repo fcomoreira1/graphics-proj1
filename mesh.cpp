@@ -4,6 +4,10 @@
 #include <list>
 #include <utility>
 
+/**
+ * @brief Computes the coefficient t in which the ray r intersects the plane
+ * defined by normal vector N and point A.
+ */
 double BoundingBox::intersect_plane(const Ray &r, const Vector &N,
                                     const Vector &A) {
     return dot(A - r.get_origin(), N) / dot(r.get_dir(), N);
@@ -99,15 +103,26 @@ bool TriangleMesh::intersect(const Ray &r, double &t, Vector &N) {
         _t = dot(A - O, _N) / denom;
         if (0 < _t && _t < t && 0 <= alpha && 0 <= beta && 0 <= gamma) {
             t = _t;
-            N = _N;
-            N.normalize();
+            if (Phong_interpolation) {
+                N = alpha * normals[triang.ni] + beta * normals[triang.nj] +
+                    gamma * normals[triang.nk];
+                N.normalize();
+            } else {
+                _N.normalize();
+                N = _N;
+            }
         }
     }
     return (t < std::numeric_limits<double>::max());
 };
-void TriangleMesh::transform(double scale_factor, Vector translation) {
+void TriangleMesh::transform(double scale_factor, Vector translation,
+                             double rotation_angle) {
+    // Vectors for rotation matrix (rotation on y-axis)
+    Vector row1(cos(rotation_angle), 0, sin(rotation_angle));
+    Vector row3(-sin(rotation_angle), 0, cos(rotation_angle));
     for (auto &v : vertices) {
         v = scale_factor * v + translation;
+        v = Vector(dot(row1, v), v.data[1], dot(row3, v));
     }
     createBVH();
 }

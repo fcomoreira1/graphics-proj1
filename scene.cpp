@@ -66,8 +66,8 @@ Vector Scene::get_color(const Ray &r) {
 }
 
 Vector Scene::random_cos(const Vector &N) {
-    double r1 = (double)rand() / RAND_MAX;
-    double r2 = (double)rand() / RAND_MAX;
+    double r1 = uniform_distribution();
+    double r2 = uniform_distribution();
     double x = cos(2 * M_PI * r1) * sqrt(1 - r2);
     double y = sin(2 * M_PI * r1) * sqrt(1 - r2);
     double z = sqrt(r2);

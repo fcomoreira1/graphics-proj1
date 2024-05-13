@@ -87,7 +87,14 @@ class BVHNode {
 class TriangleMesh : public Shape {
     // BoundingBox bbox;
     BVHNode *BVHroot;
-    bool do_BVH = true;
+    bool do_BVH = false;
+    bool Phong_interpolation = true;
+
+    std::vector<TriangleIndices> indices;
+    std::vector<Vector> vertices;
+    std::vector<Vector> normals;
+    std::vector<Vector> uvs;
+    std::vector<Vector> vertexcolors;
 
   public:
     ~TriangleMesh() {
@@ -95,6 +102,14 @@ class TriangleMesh : public Shape {
             delete BVHroot;
     }
     TriangleMesh() : BVHroot(NULL){};
+
+    void transform(double scale_factor, Vector translation,
+                   double rotation_angle = 0.0);
+    void createBVH() {
+        // bbox = BoundingBox(vertices);
+        BVHroot = new BVHNode(vertices, indices, 0, indices.size());
+    };
+    bool intersect(const Ray &r, double &t, Vector &N) override;
 
     void readOBJ(const char *obj) {
 
@@ -420,16 +435,4 @@ class TriangleMesh : public Shape {
         }
         fclose(f);
     }
-
-    void transform(double scale_factor, Vector translation);
-    void createBVH() {
-        // bbox = BoundingBox(vertices);
-        BVHroot = new BVHNode(vertices, indices, 0, indices.size());
-    };
-    bool intersect(const Ray &r, double &t, Vector &N) override;
-    std::vector<TriangleIndices> indices;
-    std::vector<Vector> vertices;
-    std::vector<Vector> normals;
-    std::vector<Vector> uvs;
-    std::vector<Vector> vertexcolors;
 };

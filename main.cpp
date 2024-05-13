@@ -7,14 +7,13 @@ int main() {
     Scene scene(Q);
 
     // Cat!
-    // TriangleMesh *mesh = new TriangleMesh();
-    // mesh->readOBJ("cat.obj");
-    // mesh->transform(0.6, Vector(0, -10, 0));
-    // mesh->set_color(Vector(0.3, 0.2, 0.25));
-    // scene.add_shape(mesh);
+    TriangleMesh *mesh = new TriangleMesh();
+    mesh->readOBJ("cat.obj");
+    mesh->transform(0.6, Vector(0, -10, 0), -M_PI / 2.0);
+    mesh->set_color(Vector(0.3, 0.2, 0.25));
+    // mesh->set_color(Vector(1.0, 1.0, 1.0));
+    scene.add_shape(mesh);
 
-    /* scene.add_shape(mesh);
-    scene.render(); */
     // scene.add_shape(new Sphere(Vector(-20, 0, 0), 10.0, Vector(1, 1, 1),
     // true)); scene.add_shape(new Sphere(Vector(20, 0, 0), 10.0, Vector(1, 1,
     // 1), false,
@@ -26,8 +25,8 @@ int main() {
     // Nice Sphere rendering
     //
     // Center Sphere
-    scene.add_shape(new Sphere(Vector(0, 0, 0), 10.0, Vector(1, 1, 1), false,
-                               false, false));
+    // scene.add_shape(new Sphere(Vector(0, 0, 0), 10.0, Vector(1, 1, 1), false,
+    //                            false, false));
     // scene.add_shape(new Sphere(Vector(-10, 0, 20), 10.0, Vector(1, 1, 1),
     // false,
     //                            true, false));
