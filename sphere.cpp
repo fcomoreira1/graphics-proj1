@@ -29,10 +29,10 @@ bool Sphere::intersect(const Ray &r, double &t, Vector &N) {
             t = dot_prod + sqrt_delta;
         }
         Vector P = r.get_origin() + t * r.get_dir();
-        N = (P - C) / R;
+        N = (is_interior_b ? -1 : 1) * (P - C) / R;
     }
     return intersected;
 }
-/* Vector Sphere::get_normal(const Vector &P) {
+/* Vector Sphere::get_normal(const Vector &P)
     return (is_interior_b ? -1 : 1) * (P - C) / R;
 } */
