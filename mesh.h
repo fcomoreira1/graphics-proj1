@@ -87,7 +87,7 @@ class BVHNode {
 class TriangleMesh : public Shape {
     // BoundingBox bbox;
     BVHNode *BVHroot;
-    bool do_BVH = false;
+    bool do_BVH = true;
     bool Phong_interpolation = true;
 
     std::vector<TriangleIndices> indices;

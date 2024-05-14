@@ -2,7 +2,7 @@
 
 double uniform_distribution() {
     static thread_local std::mt19937 generator;
-    std::uniform_int_distribution<int> distribution(0, 1);
+    std::uniform_real_distribution<double> distribution(0, 1);
     return distribution(generator);
 }
 

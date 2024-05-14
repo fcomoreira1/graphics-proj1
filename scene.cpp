@@ -1,5 +1,6 @@
 #include "scene.h"
 #include "random.h"
+#include <cmath>
 #define _CRT_SECURE_NO_WARNINGS 1
 
 #define STB_IMAGE_WRITE_IMPLEMENTATION
@@ -38,29 +39,30 @@ void Scene::render() {
 Vector Scene::get_color(const Ray &r) {
     Vector color;
     double sigma = 0.001;
-    Ray og_ray = r;
-    if (DoF) {
-        // Depth of Field
-        Vector P = og_ray.get_origin() +
-                   (D / abs(og_ray.get_dir().data[2])) * og_ray.get_dir();
-
-        double r = 5e-2 * uniform_distribution(),
-               theta = 2.0 * M_PI * uniform_distribution();
-        Vector O = og_ray.get_origin() +
-                   1 * Vector(r * sin(theta), r * cos(theta), 0.0);
-        og_ray = Ray(O, P - O);
-    }
-
     for (size_t i = 0; i < rays_per_pixel; i++) {
-        Ray fi_ray = og_ray;
+        Ray cur_ray = r;
         if (ANTIALIASING) {
             // Antialising
             std::pair<double, double> noise = box_muller(0, sigma);
-            fi_ray =
-                Ray(og_ray.get_origin(),
-                    og_ray.get_dir() + Vector(noise.first, noise.second, 0));
+            cur_ray =
+                Ray(cur_ray.get_origin(),
+                    cur_ray.get_dir() + Vector(noise.first, noise.second, 0));
         }
-        color = color + raytrace(fi_ray, max_ray_bounces);
+        if (DoF) {
+            // Depth of Field
+            Vector P = cur_ray.get_origin() +
+                       (focal_distance / abs(cur_ray.get_dir().data[2])) *
+                           cur_ray.get_dir();
+
+            double rad = std::sqrt(apperture_radius) * uniform_distribution(),
+                   theta = 2.0 * M_PI * uniform_distribution();
+
+            Vector Qprime = cur_ray.get_origin() +
+                            Vector(rad * sin(theta), rad * cos(theta), 0.0);
+
+            cur_ray = Ray(Qprime, P - Qprime);
+        }
+        color = color + raytrace(cur_ray, max_ray_bounces);
     }
     return color / rays_per_pixel;
 }
@@ -105,7 +107,6 @@ Vector Scene::raytrace(const Ray &r, int ray_depth = 0) {
     // Compute the intersection point P and the normal N
     Vector P = r.get_origin() + (min_t * r.get_dir());
     double dot_prod = dot(r.get_dir(), N);
-    Vector V = light_source - P;
 
     // Check for special surfaces
     if (S->is_mirror()) {
@@ -120,15 +121,23 @@ Vector Scene::raytrace(const Ray &r, int ray_depth = 0) {
             dot_prod = -dot_prod;
         }
         double sq = 1 - r_index * r_index * (1 - dot_prod * dot_prod);
+        Vector reflected_dir = r.get_dir() - 2 * dot_prod * N;
         if (sq >= 0) {
             P = P - 1e-8 * N;
+            // Fresnel Equations
+            if (Fresnel) {
+                double k0 = (1 - r_index) * (1 - r_index) /
+                            ((1 + r_index) * (1 + r_index));
+                double R = k0 + (1 - k0) * pow(1 - abs(dot_prod), 5);
+                if (uniform_distribution() < R)
+                    return raytrace(Ray(P, reflected_dir), ray_depth - 1);
+            }
             Vector t = r_index * (r.get_dir() - dot_prod * N) - sqrt(sq) * N;
             return raytrace(Ray(P, t), ray_depth - 1);
         } else {
             // Total Refraction
             P = P + 1e-8 * N;
-            Vector t = r.get_dir() - 2 * dot_prod * N;
-            return raytrace(Ray(P, t), ray_depth - 1);
+            return raytrace(Ray(P, reflected_dir), ray_depth - 1);
         }
     }
 
@@ -147,9 +156,11 @@ Vector Scene::raytrace(const Ray &r, int ray_depth = 0) {
         }
     }
     // Check for non-direct path
+    Vector V = light_source - P;
     if (!non_direct_path) {
         direct_light = (intensity / (4 * M_PI * V.norm2())) *
-                       dot(N, V / V.norm()) * (S->get_color() / M_PI);
+                       (S->get_color() / M_PI) *
+                       std::max(0.0, dot(N, V / V.norm()));
     }
 
     // Get indirect light

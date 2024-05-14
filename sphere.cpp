@@ -33,6 +33,3 @@ bool Sphere::intersect(const Ray &r, double &t, Vector &N) {
     }
     return intersected;
 }
-/* Vector Sphere::get_normal(const Vector &P)
-    return (is_interior_b ? -1 : 1) * (P - C) / R;
-} */

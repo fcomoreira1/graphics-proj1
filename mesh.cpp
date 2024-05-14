@@ -1,4 +1,5 @@
 #include "mesh.h"
+#include <cassert>
 #include <cinttypes>
 #include <limits>
 #include <list>
@@ -53,11 +54,6 @@ BVHNode::BVHNode(const std::vector<Vector> &vertices,
             pivot_index++;
         }
     }
-    // std::cout << start << " - " << pivot_index << " - " << end << "; "
-    //           << longest_axis << " -> " << bbox.Bmax.data[0] << " "
-    //           << bbox.Bmin.data[0] << " " << bbox.Bmax.data[1] << " "
-    //           << bbox.Bmin.data[1] << " " << bbox.Bmax.data[2] << " "
-    //           << bbox.Bmin.data[2] << std::endl;
     if (pivot_index <= start || pivot_index >= end - 1 || end - start < 5) {
         return;
     }

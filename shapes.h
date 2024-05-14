@@ -26,6 +26,8 @@ class Shape {
     bool is_interior() { return is_interior_b; }
     Vector get_color() { return albedo; }
     void set_color(Vector c) { albedo = c; }
+    void set_mirror(bool m) { is_mirror_b = m; }
+    void set_transparent(bool t) { is_transparent_b = t; }
 
   protected:
     Vector albedo;
